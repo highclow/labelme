@@ -22,8 +22,8 @@ shortcuts:
   save: Ctrl+S
   save_as: Ctrl+Shift+S
 
-  open_next: D
-  open_prev: A
+  open_next: ['L', 'K']
+  open_prev: ['H', 'J']
 
   zoom_in: Ctrl++
   zoom_out: Ctrl+-
@@ -44,3 +44,14 @@ shortcuts:
   edit_label: Ctrl+E
   edit_line_color: Ctrl+L
   edit_fill_color: Ctrl+Shift+L
+
+  hide_all: Ctrl+Shift+A
+  show_all: Ctrl+A
+  hide_part: '9'
+  show_part: Ctrl+9
+  hide_scratch: '1'
+  show_scratch: Ctrl+1
+  hide_dent: '2'
+  show_dent: Ctrl+2
+  hide_broken: '3'
+  show_broken: Ctrl+3

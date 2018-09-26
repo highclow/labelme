@@ -174,14 +174,14 @@ class MainWindow(QtWidgets.QMainWindow, WindowMixin):
         shortcuts = self._config['shortcuts']
         quit = action('&Quit', self.close, shortcuts['quit'], 'quit',
                       'Quit application')
-        open_ = action('&Open', self.openFile, shortcuts['open'], 'open',
+        open_ = action('&File', self.openFile, shortcuts['open'], 'open',
                        'Open image or label file')
-        opendir = action('&Open Dir', self.openDirDialog,
+        opendir = action('&Dir', self.openDirDialog,
                          shortcuts['open_dir'], 'open', u'Open Dir')
-        openNextImg = action('&Next Image', self.openNextImg,
+        openNextImg = action('&Next', self.openNextImg,
                              shortcuts['open_next'], 'next', u'Open Next')
 
-        openPrevImg = action('&Prev Image', self.openPrevImg,
+        openPrevImg = action('&Prev', self.openPrevImg,
                              shortcuts['open_prev'], 'prev', u'Open Prev')
         save = action('&Save', self.saveFile, shortcuts['save'], 'save',
                       'Save labels to file', enabled=False)
@@ -250,12 +250,49 @@ class MainWindow(QtWidgets.QMainWindow, WindowMixin):
         undo = action('Undo', self.undoShapeEdit, shortcuts['undo'], 'undo',
                       'Undo last add and edit of shape', enabled=False)
 
-        hideAll = action('&Hide\nPolygons',
+        hideAll = action('&Hide\nALL',
                          functools.partial(self.togglePolygons, False),
+                         shortcuts['hide_all'],
                          icon='eye', tip='Hide all polygons', enabled=False)
-        showAll = action('&Show\nPolygons',
+        showAll = action('&Show\nALL',
                          functools.partial(self.togglePolygons, True),
+                         shortcuts['show_all'],
                          icon='eye', tip='Show all polygons', enabled=False)
+        hideParts = action('&Hide\nParts',
+                           functools.partial(self.toggleParts, False),
+                           shortcuts['hide_part'],
+                           icon='eye', tip='Hide all parts', enabled=False)
+        showParts = action('&Show\nParts',
+                           functools.partial(self.toggleParts, True),
+                           shortcuts['show_part'],
+                           icon='eye', tip='Show all parts', enabled=False)
+
+        hideScratches = action('&Hide\nScratchs',
+                               functools.partial(self.toggleLabels, False, 'scratch'),
+                               shortcuts['hide_scratch'],
+                               icon='eye', tip='Hide all scratches', enabled=False)
+        showScratches = action('&Show\nScratchs',
+                               functools.partial(self.toggleLabels, True, 'scratch'),
+                               shortcuts['show_scratch'],
+                               icon='eye', tip='Show all scratches', enabled=False)
+
+        hideDents = action('&Hide\nDents',
+                           functools.partial(self.toggleLabels, False, 'dent'),
+                           shortcuts['hide_dent'],
+                           icon='eye', tip='Hide all dents', enabled=False)
+        showDents = action('&Show\nDents',
+                           functools.partial(self.toggleLabels, True, 'dent'),
+                           shortcuts['show_dent'],
+                           icon='eye', tip='Show all dents', enabled=False)
+
+        hideBrokens = action('&Hide\nbrokens',
+                             functools.partial(self.toggleLabels, False, 'broken'),
+                             shortcuts['hide_broken'],
+                             icon='eye', tip='Hide all brokens', enabled=False)
+        showBrokens = action('&Show\nbrokens',
+                             functools.partial(self.toggleLabels, True, 'broken'),
+                             shortcuts['show_broken'],
+                             icon='eye', tip='Show all brokens', enabled=False)
 
         help = action('&Tutorial', self.tutorial, icon='help',
                       tip='Show tutorial page')
@@ -270,10 +307,11 @@ class MainWindow(QtWidgets.QMainWindow, WindowMixin):
              fmtShortcut("Ctrl+Wheel")))
         self.zoomWidget.setEnabled(False)
 
-        zoomIn = action('Zoom &In', functools.partial(self.addZoom, 10),
+
+        zoomIn = action('&In', functools.partial(self.addZoom, 10),
                         shortcuts['zoom_in'], 'zoom-in',
                         'Increase zoom level', enabled=False)
-        zoomOut = action('&Zoom Out', functools.partial(self.addZoom, -10),
+        zoomOut = action('&Out', functools.partial(self.addZoom, -10),
                          shortcuts['zoom_out'], 'zoom-out',
                          'Decrease zoom level', enabled=False)
         zoomOrg = action('&Original size',
@@ -290,7 +328,7 @@ class MainWindow(QtWidgets.QMainWindow, WindowMixin):
                           checkable=True, enabled=False)
         # Group zoom controls into a list for easier toggling.
         zoomActions = (self.zoomWidget, zoomIn, zoomOut, zoomOrg,
-                       fitWindow, fitWidth)
+                       fitWindow)
         self.zoomMode = self.MANUAL_ZOOM
         self.scalers = {
             self.FIT_WINDOW: self.scaleFitWindow,
@@ -340,8 +378,7 @@ class MainWindow(QtWidgets.QMainWindow, WindowMixin):
             createPointMode=createPointMode,
             shapeLineColor=shapeLineColor, shapeFillColor=shapeFillColor,
             zoom=zoom, zoomIn=zoomIn, zoomOut=zoomOut, zoomOrg=zoomOrg,
-            fitWindow=fitWindow, fitWidth=fitWidth,
-            zoomActions=zoomActions,
+            fitWindow=fitWindow, zoomActions=zoomActions,
             fileMenuActions=(open_, opendir, save, saveAs, close, quit),
             tool=(),
             editMenu=(edit, copy, delete, None, undo, undoLastPoint,
@@ -361,6 +398,17 @@ class MainWindow(QtWidgets.QMainWindow, WindowMixin):
                 undo,
                 undoLastPoint,
                 addPoint,
+                None,
+                showAll,
+                hideAll,
+                showParts,
+                hideParts,
+                showScratches,
+                hideScratches,
+                showDents,
+                hideDents,
+                showBrokens,
+                hideBrokens,
             ),
             onLoadActive=(
                 close,
@@ -370,7 +418,9 @@ class MainWindow(QtWidgets.QMainWindow, WindowMixin):
                 createPointMode,
                 editMode,
             ),
-            onShapesPresent=(saveAs, hideAll, showAll),
+            onShapesPresent=(saveAs, hideAll, showAll, hideParts, showParts,
+                             hideScratches, hideDents, hideBrokens,
+                             showScratches, showDents, showBrokens),
         )
 
         self.canvas.edgeSelected.connect(self.actions.addPoint.setEnabled)
@@ -398,13 +448,20 @@ class MainWindow(QtWidgets.QMainWindow, WindowMixin):
             None,
             hideAll,
             showAll,
+            hideParts,
+            showParts,
+            showScratches,
+            hideScratches,
+            showDents,
+            hideDents,
+            showBrokens,
+            hideBrokens,
             None,
             zoomIn,
             zoomOut,
             zoomOrg,
             None,
             fitWindow,
-            fitWidth,
             None,
         ))
 
@@ -419,7 +476,7 @@ class MainWindow(QtWidgets.QMainWindow, WindowMixin):
         self.tools = self.toolbar('Tools')
         # Menu buttons on Left
         self.actions.tool = (
-            open_,
+            #open_,
             opendir,
             openNextImg,
             openPrevImg,
@@ -435,7 +492,6 @@ class MainWindow(QtWidgets.QMainWindow, WindowMixin):
             zoom,
             zoomOut,
             fitWindow,
-            fitWidth,
         )
 
         self.statusBar().showMessage('%s started.' % __appname__)
@@ -881,7 +937,6 @@ class MainWindow(QtWidgets.QMainWindow, WindowMixin):
         bar.setValue(bar.value() + bar.singleStep() * units)
 
     def setZoom(self, value):
-        self.actions.fitWidth.setChecked(False)
         self.actions.fitWindow.setChecked(False)
         self.zoomMode = self.MANUAL_ZOOM
         self.zoomWidget.setValue(value)
@@ -908,8 +963,6 @@ class MainWindow(QtWidgets.QMainWindow, WindowMixin):
                 self.scrollBars[Qt.Vertical].value() + y_shift)
 
     def setFitWindow(self, value=True):
-        if value:
-            self.actions.fitWidth.setChecked(False)
         self.zoomMode = self.FIT_WINDOW if value else self.MANUAL_ZOOM
         self.adjustScale()
 
@@ -922,6 +975,18 @@ class MainWindow(QtWidgets.QMainWindow, WindowMixin):
     def togglePolygons(self, value):
         for item, shape in self.labelList.itemsToShapes:
             item.setCheckState(Qt.Checked if value else Qt.Unchecked)
+
+    def toggleParts(self, value):
+        for item, shape in self.labelList.itemsToShapes:
+            if shape.label not in {'scratch', 'broken', 'dent'}:
+                item.setCheckState(Qt.Checked if value else Qt.Unchecked)
+
+
+    def toggleLabels(self, value, label):
+        for item, shape in self.labelList.itemsToShapes:
+            if shape.label == label:
+                item.setCheckState(Qt.Checked if value else Qt.Unchecked)
+
 
     def loadFile(self, filename=None):
         """Load the specified file, or the last opened file if None."""
